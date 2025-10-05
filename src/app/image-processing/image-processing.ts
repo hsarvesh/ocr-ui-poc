@@ -1,78 +1,45 @@
 
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AuthService } from '../auth.service';
-import { User } from 'firebase/auth';
-import { ImageUploadComponent } from '../image-upload/image-upload';
 import { OcrService } from '../ocr.service';
-import { catchError, finalize, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { ProcessingComponent } from '../processing/processing';
+import { AuthService } from '../auth.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+interface ProcessedFile extends File {
+  previewUrl?: string;
+  result?: string;
+  error?: string;
+}
 
 @Component({
   selector: 'app-image-processing',
-  imports: [CommonModule, ImageUploadComponent, ProcessingComponent],
+  imports: [CommonModule],
   templateUrl: './image-processing.html',
   styleUrls: ['./image-processing.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ImageProcessingComponent {
-  protected readonly authService = inject(AuthService);
-  protected readonly ocrService = inject(OcrService);
+  private readonly ocrService = inject(OcrService);
+  private readonly authService = inject(AuthService);
 
-  protected user: User | null = null;
-  protected selectedLayout = signal('single');
-  protected currentStep = signal(1);
-  protected isDropdownOpen = signal(false);
-  protected uploadedFiles = signal<File[]>([]);
-  protected extractedText = signal<string[]>([]);
-  protected isProcessing = signal(false);
-  protected processingError = signal<string | null>(null);
+  readonly user = this.authService.user$;
+  readonly currentStep = signal(1);
+  readonly layout = signal<'1column' | '2column'>('1column');
+  readonly files = signal<ProcessedFile[]>([]);
+  readonly isProcessing = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly isDropdownOpen = signal(false);
 
-  constructor() {
-    this.authService.user$.subscribe(user => {
-      this.user = user;
-    });
-  }
-
-  selectLayout(layout: string) {
-    this.selectedLayout.set(layout);
-  }
-
-  nextStep() {
-    this.currentStep.update(step => step + 1);
-    if (this.currentStep() === 3) {
-      this.processImages();
+  readonly isNextEnabled = computed(() => {
+    if (this.currentStep() === 2) {
+      return this.files().length > 0;
     }
-  }
+    return true;
+  });
 
-  previousStep() {
-    this.currentStep.update(step => step - 1);
-  }
-
-  onFilesUploaded(files: File[]) {
-    this.uploadedFiles.set(files);
-  }
-
-  processImages() {
-    this.isProcessing.set(true);
-    this.processingError.set(null);
-    this.extractedText.set([]);
-    const imageType = this.selectedLayout() === 'single' ? '1column' : '2column';
-    const files = this.uploadedFiles();
-
-    const requests = files.map(file =>
-      this.ocrService.getTextFromImage(file, imageType).pipe(
-        tap(response => {
-          this.extractedText.update(texts => [...texts, response.extracted_text]);
-        }),
-        catchError(error => {
-          this.processingError.set('An error occurred while processing the images.');
-          return of(null);
-        })
-      )
-    );
-    
+  selectLayout(layout: '1column' | '2column') {
+    this.layout.set(layout);
   }
 
   toggleDropdown() {
@@ -83,11 +50,92 @@ export class ImageProcessingComponent {
     this.authService.logout();
   }
 
-  startOver(): void {
+  back() {
+    if (this.currentStep() > 1) {
+      this.currentStep.update(value => value - 1);
+    }
+  }
+
+  next() {
+    if (this.currentStep() === 2) {
+      this.processImages();
+    } else {
+      this.currentStep.update(value => value + 1);
+    }
+  }
+
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer?.files) {
+      const fileList = Array.from(event.dataTransfer.files) as ProcessedFile[];
+      fileList.forEach(file => this.createPreview(file));
+      this.files.set(fileList);
+    }
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+  }
+
+  startOver() {
     this.currentStep.set(1);
-    this.uploadedFiles.set([]);
-    this.extractedText.set([]);
-    this.isProcessing.set(false);
-    this.processingError.set(null);
+    this.files.set([]);
+    this.error.set(null);
+  }
+
+  private createPreview(file: ProcessedFile) {
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      file.previewUrl = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  private processImages() {
+    this.isProcessing.set(true);
+    this.error.set(null);
+    this.currentStep.set(3); // Move to processing step
+
+    const processingRequests = this.files().map(file =>
+      this.ocrService.getTextFromImage(file, this.layout()).pipe(
+        catchError(err => {
+          const errorMessage = `Error processing ${file.name}: ${err.message}`;
+          console.error(errorMessage);
+          // Update the file object with the error
+          const processedFile: ProcessedFile = file;
+          processedFile.error = errorMessage;
+          return of(processedFile); // Return a processed file with an error
+        })
+      )
+    );
+
+    forkJoin(processingRequests).subscribe({
+      next: results => {
+        const processedFiles = this.files().map((file, index) => {
+          const result = results[index];
+          if (typeof result === 'object' && result && 'extracted_text' in result) {
+            (file as ProcessedFile).result = (result as { extracted_text: string }).extracted_text;
+          } else if(result instanceof File) {
+            // it's a file with an error
+          } else {
+            (file as ProcessedFile).error = 'Unexpected result format';
+          }
+          return file;
+        });
+
+        this.files.set(processedFiles);
+        this.isProcessing.set(false);
+        this.currentStep.set(4); // Move to results step
+      },
+      error: err => {
+        console.error('An unexpected error occurred:', err);
+        this.error.set('An unexpected error occurred during image processing.');
+        this.isProcessing.set(false);
+      },
+    });
   }
 }

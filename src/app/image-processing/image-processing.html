@@ -4,7 +4,7 @@
     <div class="header-left">
       <span class="title">Image Processing</span>
     </div>
-    @if (user) {
+    @if (user | async; as user) {
       <div class="header-right">
         <div class="user-info" (click)="toggleDropdown()">
           <div class="user-avatar">{{ user.displayName ? user.displayName[0] : '' }}</div>
@@ -19,60 +19,102 @@
       </div>
     }
   </header>
+
   <main class="main-content">
     <div class="stepper">
-      <div class="step" [class.active]="currentStep() === 1">
-        <div class="step-number">1</div>
-        <div class="step-label">Select Layout</div>
-      </div>
+      <div class="step" [class.active]="currentStep() === 1"><div class="step-number">1</div><div class="step-label">Select Layout</div></div>
       <div class="step-line"></div>
-      <div class="step" [class.active]="currentStep() === 2">
-        <div class="step-number">2</div>
-        <div class="step-label">Upload Images</div>
-      </div>
+      <div class="step" [class.active]="currentStep() === 2"><div class="step-number">2</div><div class="step-label">Upload Images</div></div>
       <div class="step-line"></div>
-      <div class="step" [class.active]="currentStep() === 3">
-        <div class="step-number">3</div>
-        <div class="step-label">Processing</div>
-      </div>
+      <div class="step" [class.active]="currentStep() === 3"><div class="step-number">3</div><div class="step-label">Processing</div></div>
       <div class="step-line"></div>
-      <div class="step" [class.active]="currentStep() === 4">
-        <div class="step-number">4</div>
-        <div class="step-label">Preview & Results</div>
-      </div>
+      <div class="step" [class.active]="currentStep() === 4"><div class="step-number">4</div><div class="step-label">Preview & Results</div></div>
     </div>
-    @if (currentStep() === 1) {
-      <div class="layout-selection">
-        <h2>Select Document Layout</h2>
-        <div class="layout-options">
-          <div class="layout-option" [class.selected]="selectedLayout() === 'single'" (click)="selectLayout('single')">
-            <div class="layout-icon"></div>
-            <h3>Single Column</h3>
-            <p>For documents with single column layout</p>
+
+    @switch (currentStep()) {
+      @case (1) {
+        <div class="layout-selection">
+          <h2>Select Document Layout</h2>
+          <div class="layout-options">
+            <div class="layout-option" [class.selected]="layout() === '1column'" (click)="selectLayout('1column')">
+              <div class="layout-icon single-column"></div>
+              <h3>Single Column</h3>
+              <p>For documents with a single column layout</p>
+            </div>
+            <div class="layout-option" [class.selected]="layout() === '2column'" (click)="selectLayout('2column')">
+              <div class="layout-icon two-column"></div>
+              <h3>Two Columns</h3>
+              <p>For documents with a two-column layout</p>
+            </div>
           </div>
-          <div class="layout-option" [class.selected]="selectedLayout() === 'two'" (click)="selectLayout('two')">
-            <div class="layout-icon"></div>
-            <h3>Two Columns</h3>
-            <p>For documents with two column layout</p>
+          <button class="next-btn" (click)="next()" [disabled]="!isNextEnabled()">Next</button>
+        </div>
+      }
+      @case (2) {
+        <div class="upload-container">
+          <h2>Upload Your Images</h2>
+          <div class="drop-zone" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event)">
+            <p>Drag and drop files here or click to select files</p>
+          </div>
+          @if (files().length > 0) {
+            <div class="file-list">
+              <h4>Selected Files:</h4>
+              <ul>
+                @for (file of files(); track file.name) {
+                  <li>{{ file.name }}</li>
+                }
+              </ul>
+            </div>
+          }
+          <div class="navigation-buttons">
+            <button class="back-btn" (click)="back()">Back</button>
+            <button class="next-btn" (click)="next()" [disabled]="!isNextEnabled()">Next</button>
           </div>
         </div>
-        <button class="next-btn" (click)="nextStep()">Next</button>
-      </div>
-    }
-    @if (currentStep() === 2) {
-      <app-image-upload 
-        (previous)="previousStep()" 
-        (next)="nextStep()"
-        (filesUploaded)="onFilesUploaded($event)">
-      </app-image-upload>
-    }
-    @if (currentStep() === 3) {
-      <app-processing 
-        [isProcessing]="isProcessing()" 
-        [processingError]="processingError()" 
-        [extractedText]="extractedText()"
-        (startOver)="startOver()">
-    </app-processing>
+      }
+      @case (3) {
+        <div class="processing-container">
+          @if (isProcessing()) {
+            <h2>Processing your images...</h2>
+            <div class="spinner"></div>
+            <p>This may take a few moments. Please don't close this window.</p>
+          } @else if (error()) {
+            <h2>An Error Occurred</h2>
+            <p class="error-message">{{ error() }}</p>
+            <button class="start-over-btn" (click)="startOver()">Start Over</button>
+          }
+        </div>
+      }
+      @case (4) {
+        <div class="results-container">
+          <h2>Results</h2>
+          <div class="results-grid" [class.two-column]="layout() === '2column'">
+            @for (file of files(); track file.name) {
+              <div class="result-item">
+                <h3>{{ file.name }}</h3>
+                @if (file.result) {
+                  <div class="image-preview">
+                    <img [src]="file.previewUrl" alt="Image preview" />
+                  </div>
+                  <div class="extracted-text">
+                    <h4>Extracted Text:</h4>
+                    <pre>{{ file.result }}</pre>
+                  </div>
+                } @else if (file.error) {
+                  <div class="error-message">
+                    <p>Could not process this image. Error: {{ file.error }}</p>
+                  </div>
+                } @else {
+                  <div class="no-result">
+                    <p>No text could be extracted from this image.</p>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <button class="start-over-btn" (click)="startOver()">Process More Images</button>
+        </div>
+      }
     }
   </main>
 </div>

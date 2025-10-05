@@ -53,8 +53,14 @@
       @case (2) {
         <div class="upload-container">
           <h2>Upload Your Images</h2>
-          <div class="drop-zone" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onFileDrop($event)">
-            <p>Drag and drop files here or click to select files</p>
+          <div class="drop-zone"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)"
+               (drop)="onFileDrop($event)">
+            <label for="fileInput" class="file-label">
+              <p>Drag and drop files here or click to select files</p>
+            </label>
+            <input id="fileInput" type="file" multiple (change)="onFileSelected($event)" class="visually-hidden">
           </div>
           @if (files().length > 0) {
             <div class="file-list">

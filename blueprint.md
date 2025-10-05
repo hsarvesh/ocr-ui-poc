@@ -23,13 +23,17 @@ This application is a proof-of-concept for an Optical Character Recognition (OCR
 - Custom-styled components, including buttons, layout selectors, and file upload areas.
 - An animated gradient effect for the main title.
 
-## Current Task: Fix Image Processing Logic
+## Current Task: Fix File Upload Functionality
 
-The application is currently not processing the uploaded images. The user is advanced to the results step without the `processImages()` function ever being called.
+The application is currently not allowing users to upload images by clicking on the upload area; only drag-and-drop is working. This is a critical bug that needs to be fixed to provide a complete user experience.
 
 ### Plan
 
-1.  **Modify `ImageProcessingComponent`:** Update the `nextStep()` method in `image-processing.ts`.
-    - When the user is on `currentStep() === 2` (the image upload step) and clicks "Next", the `processImages()` function must be called.
-2.  **Implement Concurrent Processing:** Modify the `processImages()` function to use `forkJoin` from RxJS. This will allow all uploaded images to be processed in parallel, improving performance and user experience.
-3.  **Provide User Feedback:** Ensure the `isProcessing` signal is correctly used to show a loading state while the images are being processed and any potential errors are displayed to the user.
+1.  **Modify `image-processing.html`:**
+    - Add a hidden file input element (`<input type="file">`) to the template.
+    - Add a click handler to the drop zone that programmatically triggers a click on the file input element.
+2.  **Update `ImageProcessingComponent`:**
+    - Add a method to handle the file selection from the file input.
+    - This method will take the selected files, create preview URLs, and update the `files` signal.
+3.  **Verify and Build:**
+    - Run `ng build` to ensure the fix is implemented correctly and does not introduce any new errors.

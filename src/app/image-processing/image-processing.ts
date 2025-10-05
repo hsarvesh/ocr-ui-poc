@@ -64,12 +64,25 @@ export class ImageProcessingComponent {
     }
   }
 
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      const fileList = Array.from(input.files) as ProcessedFile[];
+      Promise.all(fileList.map(file => this.createPreview(file)))
+        .then(processedFiles => {
+          this.files.set(processedFiles);
+        });
+    }
+  }
+
   onFileDrop(event: DragEvent) {
     event.preventDefault();
     if (event.dataTransfer?.files) {
       const fileList = Array.from(event.dataTransfer.files) as ProcessedFile[];
-      fileList.forEach(file => this.createPreview(file));
-      this.files.set(fileList);
+      Promise.all(fileList.map(file => this.createPreview(file)))
+        .then(processedFiles => {
+          this.files.set(processedFiles);
+        });
     }
   }
 
@@ -87,12 +100,15 @@ export class ImageProcessingComponent {
     this.error.set(null);
   }
 
-  private createPreview(file: ProcessedFile) {
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      file.previewUrl = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  private createPreview(file: ProcessedFile): Promise<ProcessedFile> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        file.previewUrl = e.target.result;
+        resolve(file);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   private processImages() {

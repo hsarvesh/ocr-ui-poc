@@ -14,30 +14,6 @@ html, body {
   text-align: center;
 }
 
-.animated-gradient {
-  font-size: 5rem;
-  font-weight: bold;
-  background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200% 200%;
-  animation: gradient 5s ease infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
 .btn {
   padding: 10px 20px;
   border: none;

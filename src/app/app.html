@@ -1,16 +1,12 @@
 
-<div class="container">
-  <h1 class="animated-gradient">OCR-UI</h1>
-  @if (authService.user$ | async; as user) {
-    <div class="user-profile">
-      <img [src]="user.photoURL" alt="User Profile" class="user-photo">
-      <span>Welcome, {{ user.displayName }}</span>
-      <button (click)="logout()" class="btn logout-btn">Logout</button>
-    </div>
-  } @else {
+@if (authService.user$ | async; as user) {
+  <app-image-processing></app-image-processing>
+} @else {
+  <div class="container">
+    <h1 class="animated-gradient">OCR-UI</h1>
     <button (click)="login()" class="btn login-btn">
       <span>Login with Google</span>
     </button>
-  }
-</div>
+  </div>
+}
 <router-outlet></router-outlet>

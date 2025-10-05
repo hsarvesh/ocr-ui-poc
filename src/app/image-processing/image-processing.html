@@ -1,0 +1,78 @@
+
+<div class="main-container">
+  <header class="header">
+    <div class="header-left">
+      <span class="title">Image Processing</span>
+    </div>
+    @if (user) {
+      <div class="header-right">
+        <div class="user-info" (click)="toggleDropdown()">
+          <div class="user-avatar">{{ user.displayName ? user.displayName[0] : '' }}</div>
+          <span class="user-name">{{ user.displayName }}</span>
+          <button class="dropdown-btn">&#9662;</button>
+          @if (isDropdownOpen()) {
+            <div class="dropdown-menu">
+              <a (click)="logout()">Logout</a>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </header>
+  <main class="main-content">
+    <div class="stepper">
+      <div class="step" [class.active]="currentStep() === 1">
+        <div class="step-number">1</div>
+        <div class="step-label">Select Layout</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="currentStep() === 2">
+        <div class="step-number">2</div>
+        <div class="step-label">Upload Images</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="currentStep() === 3">
+        <div class="step-number">3</div>
+        <div class="step-label">Processing</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="currentStep() === 4">
+        <div class="step-number">4</div>
+        <div class="step-label">Preview & Results</div>
+      </div>
+    </div>
+    @if (currentStep() === 1) {
+      <div class="layout-selection">
+        <h2>Select Document Layout</h2>
+        <div class="layout-options">
+          <div class="layout-option" [class.selected]="selectedLayout() === 'single'" (click)="selectLayout('single')">
+            <div class="layout-icon"></div>
+            <h3>Single Column</h3>
+            <p>For documents with single column layout</p>
+          </div>
+          <div class="layout-option" [class.selected]="selectedLayout() === 'two'" (click)="selectLayout('two')">
+            <div class="layout-icon"></div>
+            <h3>Two Columns</h3>
+            <p>For documents with two column layout</p>
+          </div>
+        </div>
+        <button class="next-btn" (click)="nextStep()">Next</button>
+      </div>
+    }
+    @if (currentStep() === 2) {
+      <app-image-upload 
+        (previous)="previousStep()" 
+        (next)="nextStep()"
+        (filesUploaded)="onFilesUploaded($event)">
+      </app-image-upload>
+    }
+    @if (currentStep() === 3) {
+      <app-processing 
+        [isProcessing]="isProcessing()" 
+        [processingError]="processingError()" 
+        [extractedText]="extractedText()"
+        (startOver)="startOver()">
+    </app-processing>
+    }
+  </main>
+</div>

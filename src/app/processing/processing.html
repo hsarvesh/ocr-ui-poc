@@ -1,0 +1,24 @@
+
+<div class="processing-container">
+  @if (isProcessing()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Processing your images...</p>
+    </div>
+  } @else if (processingError()) {
+    <div class="error-container">
+      <p>{{ processingError() }}</p>
+      <button (click)="onStartOver()">Try Again</button>
+    </div>
+  } @else {
+    <div class="results-container">
+      <h2>Extracted Text</h2>
+      @for (text of extractedText(); track $index) {
+        <div class="text-block">
+          <p>{{ text }}</p>
+        </div>
+      }
+      <button (click)="onStartOver()">Process More Images</button>
+    </div>
+  }
+</div>

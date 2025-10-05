@@ -3,10 +3,11 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './auth.service';
+import { ImageProcessingComponent } from './image-processing/image-processing';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule],
+  imports: [RouterOutlet, CommonModule, ImageProcessingComponent],
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -16,9 +17,5 @@ export class App {
 
   login() {
     this.authService.loginWithGoogle();
-  }
-
-  logout() {
-    this.authService.logout();
   }
 }

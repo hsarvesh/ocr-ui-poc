@@ -1,12 +1,24 @@
-import { Component, signal } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, CommonModule, NgOptimizedImage],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrls: ['./app.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
-  protected readonly title = signal('myapp');
+  protected readonly authService = inject(AuthService);
+
+  login() {
+    this.authService.loginWithGoogle();
+  }
+
+  logout() {
+    this.authService.logout();
+  }
 }

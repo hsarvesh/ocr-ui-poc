@@ -9,7 +9,7 @@ This project is a simple OCR (Optical Character Recognition) UI built with Angul
 
 *   **UI:**
     *   A simple UI with the text "OCR-UI" centered and animated with a colorful gradient.
-    *   "Login with Google" button with the Google logo.
+    *   A "Login with Google" button.
     *   When logged in, it displays the user's profile picture, display name, and a "Logout" button.
     *   The "Login with Google" button is located below the "OCR-UI" title.
 *   **Authentication:**

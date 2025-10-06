@@ -11,5 +11,9 @@ import { AuthService } from '../auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
-  protected readonly authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
+
+  login() {
+    this.authService.loginWithGoogle();
+  }
 }

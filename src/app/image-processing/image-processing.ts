@@ -21,7 +21,7 @@ interface FileStatus {
   imports: [CommonModule],
   templateUrl: './image-processing.html',
   styleUrls: ['./image-processing.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ImageProcessingComponent {
   private readonly ocrService = inject(OcrService);

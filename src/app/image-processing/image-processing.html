@@ -80,44 +80,57 @@
       }
       @case (3) {
         <div class="processing-container">
-          @if (isProcessing()) {
-            <h2>Processing your images...</h2>
-            <div class="spinner"></div>
-            <p>This may take a few moments. Please don't close this window.</p>
-          } @else if (error()) {
-            <h2>An Error Occurred</h2>
-            <p class="error-message">{{ error() }}</p>
-            <button class="start-over-btn" (click)="startOver()">Start Over</button>
-          }
+          <h2>Processing your images...</h2>
+          <div class="progress-summary">
+            <div class="progress-bar-container">
+              <div class="progress-bar" [style.width.%]="progressPercentage()"></div>
+            </div>
+            <div class="progress-text">{{ processedCount() }} of {{ files().length }} images processed</div>
+          </div>
+          <div class="file-status-list">
+            @for (status of fileStatuses(); track status.name) {
+              <div class="file-status-item" [class.status-success]="status.status === 'success'" [class.status-error]="status.status === 'error'">
+                <span class="file-name">{{ status.name }}</span>
+                <span class="file-status">{{ status.message }}</span>
+              </div>
+            }
+          </div>
         </div>
       }
       @case (4) {
         <div class="results-container">
-          <h2>Results</h2>
-          <div class="results-grid" [class.two-column]="layout() === '2column'">
-            @for (file of files(); track file.name) {
-              <div class="result-item">
-                <h3>{{ file.name }}</h3>
-                @if (file.result) {
-                  <div class="image-preview">
-                    <img [src]="file.previewUrl" alt="Image preview" />
-                  </div>
-                  <div class="extracted-text">
-                    <h4>Extracted Text:</h4>
-                    <pre>{{ file.result }}</pre>
-                  </div>
-                } @else if (file.error) {
-                  <div class="error-message">
-                    <p>Could not process this image. Error: {{ file.error }}</p>
-                  </div>
-                } @else {
-                  <div class="no-result">
-                    <p>No text could be extracted from this image.</p>
-                  </div>
-                }
-              </div>
-            }
+          <div class="results-header">
+            <h2>Results</h2>
+            <button class="download-all-btn" (click)="downloadAllText()">Download All Text</button>
           </div>
+          @if (currentImage(); as image) {
+            <div class="carousel-container">
+              <div class="carousel-main-view">
+                <div class="image-preview-container">
+                   @if (image.previewUrl) {
+                    <img [src]="image.previewUrl" alt="Preview of {{ image.name }}" class="image-preview-item">
+                  } @else {
+                    <div class="no-preview">Image preview not available</div>
+                  }
+                </div>
+                <div class="text-preview-container">
+                  <div class="text-preview-header">
+                    <h3>Extracted Text</h3>
+                    <button class="copy-btn" (click)="copyText()" [disabled]="!image.result">Copy Text</button>
+                  </div>
+                  <pre class="text-preview-content">{{ image.result || 'No text extracted' }}</pre>
+                </div>
+              </div>
+
+              <div class="carousel-navigation">
+                <button class="nav-btn prev-btn" (click)="previousImage()" [disabled]="currentImageIndex() === 0">&#8249;</button>
+                <div class="image-counter">Image {{ currentImageIndex() + 1 }} of {{ files().length }}</div>
+                <button class="nav-btn next-btn" (click)="nextImage()" [disabled]="currentImageIndex() === files().length - 1">&#8250;</button>
+              </div>
+            </div>
+          } @else {
+            <p>No images to display</p>
+          }
           <button class="start-over-btn" (click)="startOver()">Process More Images</button>
         </div>
       }

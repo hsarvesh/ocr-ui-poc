@@ -1,4 +1,7 @@
 
+/**
+ * The Firebase configuration.
+ */
 export const firebaseConfig = {
   apiKey: "AIzaSyDmQcCCO_pqm0MJIl6AUBLi9RHCYRTr4yc",
   authDomain: "akshar-chintan-ui.firebaseapp.com",

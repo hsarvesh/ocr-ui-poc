@@ -4,7 +4,7 @@
     <div class="header-left">
       <span class="title">Image Processing</span>
     </div>
-    @if (user | async; as user) {
+    @if (user$ | async; as user) {
       <div class="header-right">
         <div class="user-info" (click)="toggleDropdown()">
           <div class="user-avatar">{{ user.displayName ? user.displayName[0] : '' }}</div>

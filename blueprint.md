@@ -20,3 +20,7 @@ This project is an Optical Character Recognition (OCR) application that allows u
     *   `firebase.config.ts` - The Firebase configuration.
     *   `login/` - Contains the login component.
     *   `image-processing/` - Contains the image processing component.
+
+## Current Task: Add Detailed Comments
+
+I will now go through the entire codebase and add detailed comments to each file. This will make the code more explainable and easier to maintain in the future.

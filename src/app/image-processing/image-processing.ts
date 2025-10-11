@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal, effect } from '@angular/core';
 import { OcrService } from '../ocr.service';
 import { AuthService } from '../auth.service';
+import { CreditsService } from '../credits.service';
 import { doc, docData, Firestore, setDoc } from '@angular/fire/firestore';
 import { CommonModule } from '@angular/common';
 import { User } from '@angular/fire/auth';
@@ -40,8 +41,8 @@ export class ImageProcessingComponent {
   private readonly ocrService = inject(OcrService);
   // The authentication service for user management.
   readonly authService = inject(AuthService);
-  // The Firebase Firestore service for database operations.
-  private readonly firestore = inject(Firestore);
+  // The credit service for managing user credits.
+  private readonly creditsService = inject(CreditsService);
 
   // --- Component State Signals ---
 
@@ -55,8 +56,6 @@ export class ImageProcessingComponent {
   readonly fileStatuses = signal<FileStatus[]>([]);
   // The index of the currently displayed image in the results carousel.
   readonly currentImageIndex = signal(0);
-  // A signal that holds the user's credit count.
-  readonly creditCount = signal(0);
 
   // --- Computed Signals for Derived State ---
 
@@ -80,22 +79,6 @@ export class ImageProcessingComponent {
     if (this.files().length === 0) return 0;
     return (this.processedCount() / this.files().length) * 100;
   });
-
-  /**
-   * The constructor for the ImageProcessingComponent.
-   * It sets up an effect to react to changes in the authentication state.
-   */
-  constructor() {
-    effect(() => {
-      const user = this.authService.currentUser();
-      if (user) {
-        const creditRef = doc(this.firestore, `credits/${user.uid}`);
-        docData(creditRef).subscribe((creditData: any) => {
-          this.creditCount.set(creditData?.count ?? 0);
-        });
-      }
-    });
-  }
 
   // --- Stepper Navigation ---
 
@@ -198,16 +181,10 @@ export class ImageProcessingComponent {
     const filesToProcess = this.files();
     this.fileStatuses.set(filesToProcess.map(f => ({ name: f.name, status: 'pending', message: 'In queue...' })));
 
-    let availableCredits = this.creditCount();
-
     for (let i = 0; i < filesToProcess.length; i++) {
-      if (availableCredits <= 0) {
-        this.updateStatus(i, 'error', 'Insufficient credits.');
-        continue; // Skip processing if no credits are left
-      }
-
       const file = filesToProcess[i];
       try {
+        await this.creditsService.useCredits(1, `Processed image: ${file.name}`);
         this.updateStatus(i, 'pending', 'Processing...');
         const result = await this.ocrService.extractText(file, this.layout()).toPromise();
         this.files.update(currentFiles => {
@@ -215,15 +192,6 @@ export class ImageProcessingComponent {
           return [...currentFiles];
         });
         this.updateStatus(i, 'success', 'Completed');
-        
-        // Decrement credits after successful processing
-        availableCredits--;
-        const user = this.authService.currentUser();
-        if (user) {
-            const creditRef = doc(this.firestore, `credits/${user.uid}`);
-            await setDoc(creditRef, { count: availableCredits });
-        }
-
       } catch (error) {
         console.error(`Error processing ${file.name}:`, error);
         this.updateStatus(i, 'error', 'Failed');

@@ -1,25 +1,4 @@
-
 <div class="main-container">
-  <header class="header">
-    <div class="header-left">
-      <span class="title">Image Processing</span>
-    </div>
-    @if (user$ | async; as user) {
-      <div class="header-right">
-        <div class="user-info" (click)="toggleDropdown()">
-          <div class="user-avatar">{{ user.displayName ? user.displayName[0] : '' }}</div>
-          <span class="user-name">{{ user.displayName }}</span>
-          <button class="dropdown-btn">&#9662;</button>
-          @if (isDropdownOpen()) {
-            <div class="dropdown-menu">
-              <a (click)="logout()">Logout</a>
-            </div>
-          }
-        </div>
-      </div>
-    }
-  </header>
-
   <main class="main-content">
     <div class="stepper">
       <div class="step" [class.active]="currentStep() === 1"><div class="step-number">1</div><div class="step-label">Select Layout</div></div>

@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal, effect } from '@angular/core';
 import { OcrService } from '../ocr.service';
 import { AuthService } from '../auth.service';
 import { doc, docData, Firestore, setDoc } from '@angular/fire/firestore';
-import { AsyncPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { User } from '@angular/fire/auth';
 import { take } from 'rxjs/operators';
 
@@ -33,7 +33,7 @@ interface FileStatus {
   styleUrls: ['./image-processing.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [AsyncPipe] // Import AsyncPipe to use the async pipe in the template.
+  imports: [CommonModule]
 })
 export class ImageProcessingComponent {
   // The OCR service for text extraction.
@@ -45,10 +45,6 @@ export class ImageProcessingComponent {
 
   // --- Component State Signals ---
 
-  // The current user object as an observable.
-  readonly user$ = this.authService.user$;
-  // Tracks the visibility of the user dropdown menu.
-  readonly isDropdownOpen = signal(false);
   // The current step in the multi-step process (1-4).
   readonly currentStep = signal(1);
   // The selected layout for the document ('1column' or '2column').
@@ -87,10 +83,11 @@ export class ImageProcessingComponent {
 
   /**
    * The constructor for the ImageProcessingComponent.
-   * It subscribes to user changes to fetch and update the credit count.
+   * It sets up an effect to react to changes in the authentication state.
    */
   constructor() {
-    this.user$.subscribe(user => {
+    effect(() => {
+      const user = this.authService.currentUser();
       if (user) {
         const creditRef = doc(this.firestore, `credits/${user.uid}`);
         docData(creditRef).subscribe((creditData: any) => {
@@ -124,19 +121,6 @@ export class ImageProcessingComponent {
     this.files.set([]);
     this.fileStatuses.set([]);
     this.currentImageIndex.set(0);
-  }
-
-  // --- User and Auth Methods ---
-
-  /** Toggles the visibility of the user dropdown menu. */
-  toggleDropdown() {
-    this.isDropdownOpen.update(open => !open);
-  }
-
-  /** Logs the user out. */
-  logout() {
-    this.authService.logout();
-    this.isDropdownOpen.set(false);
   }
 
   // --- Step 1: Layout Selection ---
@@ -233,8 +217,8 @@ export class ImageProcessingComponent {
         this.updateStatus(i, 'success', 'Completed');
         
         // Decrement credits after successful processing
-        availableCredits--; 
-        const user = await this.authService.user$.pipe(take(1)).toPromise();
+        availableCredits--;
+        const user = this.authService.currentUser();
         if (user) {
             const creditRef = doc(this.firestore, `credits/${user.uid}`);
             await setDoc(creditRef, { count: availableCredits });

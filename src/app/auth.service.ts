@@ -1,7 +1,5 @@
-
-import { Injectable, inject, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
-import { Auth, GoogleAuthProvider, signInWithPopup, signOut, user } from '@angular/fire/auth';
+import { Injectable, inject, signal } from '@angular/core';
+import { Auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from '@angular/fire/auth';
 import { doc, docData, Firestore, setDoc } from '@angular/fire/firestore';
 import { take } from 'rxjs/operators';
 
@@ -14,32 +12,18 @@ import { take } from 'rxjs/operators';
 export class AuthService {
   // The Firebase Authentication service.
   private readonly auth = inject(Auth);
-
   // The Firebase Firestore service.
   private readonly firestore = inject(Firestore);
-
-  // The Angular router.
-  private readonly router = inject(Router);
-
-  // The Angular zone.
-  private readonly ngZone = inject(NgZone);
-
-  // An observable of the current user.
-  readonly user$ = user(this.auth);
+  
+  // A signal that holds the current user.
+  readonly currentUser = signal<User | null>(null);
 
   /**
    * The constructor for the AuthService.
    */
   constructor() {
-    // Subscribe to the user observable and redirect the user to the appropriate page.
-    this.user$.subscribe(user => {
-      this.ngZone.run(() => {
-        if (user) {
-          this.router.navigate(['/image-processing']);
-        } else {
-          this.router.navigate(['/login']);
-        }
-      });
+    onAuthStateChanged(this.auth, user => {
+      this.currentUser.set(user);
     });
   }
 

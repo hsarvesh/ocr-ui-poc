@@ -1,51 +1,50 @@
-
-import { Injectable, inject, signal } from '@angular/core';
-import { doc, docData, Firestore, updateDoc, increment } from '@angular/fire/firestore';
+import { Injectable, inject, signal, effect } from '@angular/core';
+import { doc, docData, Firestore, setDoc } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { User } from '@angular/fire/auth';
 
+/**
+ * The service for managing user credits.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class CreditsService {
+  // The Firebase Firestore service for database operations.
   private readonly firestore = inject(Firestore);
+  // The authentication service for user management.
   private readonly authService = inject(AuthService);
-  private currentUser: User | null = null;
 
-  public readonly credits = signal(0);
+  // A signal that holds the user's credit count.
+  readonly credits = signal(0);
 
+  /**
+   * The constructor for the CreditsService.
+   * It sets up an effect to react to changes in the authentication state.
+   */
   constructor() {
-    this.authService.user$.subscribe(user => {
-      this.currentUser = user;
+    effect(() => {
+      const user = this.authService.currentUser();
       if (user) {
         const creditRef = doc(this.firestore, `credits/${user.uid}`);
         docData(creditRef).subscribe((creditData: any) => {
-          if (creditData) {
-            this.credits.set(creditData.count);
-          } else {
-            this.credits.set(0);
-          }
+          this.credits.set(creditData?.count ?? 0);
         });
-      } else {
-        this.credits.set(0);
       }
     });
   }
 
-  async useCredits(amount: number): Promise<boolean> {
-    if (!this.currentUser || this.credits() < amount) {
-      return false;
-    }
-
-    const creditRef = doc(this.firestore, `credits/${this.currentUser.uid}`);
-    try {
-      await updateDoc(creditRef, {
-        count: increment(-amount)
-      });
-      return true;
-    } catch (error) {
-      console.error('Failed to update credits:', error);
-      return false;
+  /**
+   * Decrements the user's credit count by the given amount.
+   *
+   * @param amount The amount to decrement the credit count by.
+   */
+  async useCredits(amount: number) {
+    const user = this.authService.currentUser();
+    if (user) {
+      const creditRef = doc(this.firestore, `credits/${user.uid}`);
+      const newCreditCount = this.credits() - amount;
+      await setDoc(creditRef, { count: newCreditCount });
     }
   }
 }

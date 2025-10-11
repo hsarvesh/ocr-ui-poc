@@ -1,28 +1,38 @@
-
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../auth.service';
 import { CreditsService } from '../credits.service';
+import { User } from '@angular/fire/auth';
+import { CommonModule } from '@angular/common';
 
+/**
+ * The user menu component.
+ * Displays user information, credit balance, and a dropdown menu with actions.
+ */
 @Component({
   selector: 'app-user-menu',
-  imports: [CommonModule],
   templateUrl: './user-menu.html',
   styleUrls: ['./user-menu.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [CommonModule],
 })
 export class UserMenuComponent {
-  private readonly authService = inject(AuthService);
-  protected readonly creditsService = inject(CreditsService);
+  // The authentication service for user management.
+  readonly authService = inject(AuthService);
+  // The credit service for managing user credits.
+  readonly creditsService = inject(CreditsService);
 
-  readonly user$ = this.authService.user$;
-  readonly isMenuOpen = signal(false);
+  // Tracks the visibility of the user dropdown menu.
+  readonly isDropdownOpen = signal(false);
 
-  toggleMenu() {
-    this.isMenuOpen.update(isOpen => !isOpen);
+  /** Toggles the visibility of the user dropdown menu. */
+  toggleDropdown() {
+    this.isDropdownOpen.update((open: boolean) => !open);
   }
 
+  /** Logs the user out. */
   logout() {
     this.authService.logout();
+    this.isDropdownOpen.set(false);
   }
 }

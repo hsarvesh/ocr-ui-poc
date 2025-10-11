@@ -1,0 +1,13 @@
+<div class="app-container">
+  <header class="app-header">
+    <div class="logo">
+      <h1>OCR Application</h1>
+    </div>
+    @if(authService.currentUser()) {
+      <app-user-menu />
+    }
+  </header>
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>

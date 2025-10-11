@@ -209,7 +209,7 @@ export class ImageProcessingComponent {
       const file = filesToProcess[i];
       try {
         this.updateStatus(i, 'pending', 'Processing...');
-        const result = await this.ocrService.extractText(file).toPromise();
+        const result = await this.ocrService.extractText(file, this.layout()).toPromise();
         this.files.update(currentFiles => {
           currentFiles[i].result = result?.text;
           return [...currentFiles];

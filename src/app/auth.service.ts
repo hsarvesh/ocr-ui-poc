@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Auth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from '@angular/fire/auth';
-import { doc, docData, Firestore, setDoc } from '@angular/fire/firestore';
+import { doc, docData, Firestore, setDoc, collection, addDoc, serverTimestamp } from '@angular/fire/firestore';
 import { take } from 'rxjs/operators';
 
 /**
@@ -37,20 +37,22 @@ export class AuthService {
       const user = credential.user;
 
       if (user) {
+        const userId = user.uid;
         // Create a reference to the user's document in Firestore.
-        const userRef = doc(this.firestore, `users/${user.uid}`);
-
+        const userRef = doc(this.firestore, `users/${userId}`);
         // Create a reference to the user's credit document in Firestore.
-        const creditRef = doc(this.firestore, `credits/${user.uid}`);
+        const creditRef = doc(this.firestore, `credits/${userId}`);
+        // Create a reference to the user's transactions subcollection.
+        const transactionsRef = collection(this.firestore, `credits/${userId}/transactions`);
 
-        // Check if the user already exists in Firestore.
+        // Check if the user document already exists in Firestore.
         docData(userRef).pipe(
           take(1)
-        ).subscribe(userData => {
+        ).subscribe(async userData => {
           if (!userData) {
             // If the user does not exist, create a new document for them.
-            setDoc(userRef, {
-              uid: user.uid,
+            await setDoc(userRef, {
+              uid: userId,
               displayName: user.displayName,
               email: user.email,
               photoURL: user.photoURL,
@@ -59,13 +61,25 @@ export class AuthService {
               lastSignInTime: user.metadata.lastSignInTime,
             });
 
-            // Give new users 10 credits.
-            setDoc(creditRef, { count: 10 });
+            // Check if the credits document exists, and if not, initialize credits and log transaction.
+            const creditDoc = await docData(creditRef).pipe(take(1)).toPromise();
+            if (!creditDoc) {
+              // Give new users 10 credits and log it as a transaction.
+              await setDoc(creditRef, { count: 10 });
+              await addDoc(transactionsRef, {
+                amount: 10,
+                type: 'add',
+                description: 'Initial credit grant',
+                timestamp: serverTimestamp()
+              });
+            }
           }
         });
       }
     } catch (error) {
       console.error('Error during Google login:', error);
+      // Optionally throw the error to be handled by the component
+      throw error;
     }
   }
 
